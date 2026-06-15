@@ -1,0 +1,24 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+.aider*
+hs_err_pid*.log
+
+# Firebase local secrets (asla commit'leme)
+functions/.secret.local
+functions/.env.local
+functions/.env
+functions/node_modules/
+app/google-services.json
