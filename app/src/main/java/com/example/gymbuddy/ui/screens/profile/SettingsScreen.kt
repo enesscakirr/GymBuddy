@@ -61,6 +61,7 @@ fun SettingsScreen(
     val uiState       by settingsViewModel.uiState.collectAsState()
     val passwordState by settingsViewModel.passwordState.collectAsState()
     val deleteState   by settingsViewModel.deleteState.collectAsState()
+    val isGoogleUser  = settingsViewModel.isGoogleUser
 
     // Gizlilik state'leri (Firestore'dan başlangıç değerleri)
     var locationVisible by remember(currentUser?.uid) {
@@ -177,9 +178,10 @@ fun SettingsScreen(
     // Hesabı sil dialog
     if (showDeleteDialog) {
         DeleteAccountDialog(
-            isLoading = deleteState.isLoading,
-            error     = deleteState.error,
-            onConfirm = { password ->
+            isLoading    = deleteState.isLoading,
+            error        = deleteState.error,
+            isGoogleUser = isGoogleUser,
+            onConfirm    = { password ->
                 currentUser?.uid?.let { settingsViewModel.deleteAccount(password, it) }
             },
             onDismiss = { showDeleteDialog = false; settingsViewModel.clearDeleteState() }
@@ -481,15 +483,17 @@ fun SettingsScreen(
 
             item {
                 SettingsCard(modifier = Modifier.padding(horizontal = 20.dp)) {
-                    // Şifre değiştir
-                    ClickableRow(
-                        icon     = Icons.Outlined.Key,
-                        title    = "Şifre Değiştir",
-                        subtitle = "Hesap güvenliğini güncelle",
-                        onClick  = { showPasswordDialog = true }
-                    )
+                    // Şifre değiştir — sadece e-posta/şifre kullanıcıları için
+                    if (!isGoogleUser) {
+                        ClickableRow(
+                            icon     = Icons.Outlined.Key,
+                            title    = "Şifre Değiştir",
+                            subtitle = "Hesap güvenliğini güncelle",
+                            onClick  = { showPasswordDialog = true }
+                        )
 
-                    SettingsDivider()
+                        SettingsDivider()
+                    }
 
                     // Hesabı sil
                     ClickableRow(
@@ -803,6 +807,7 @@ private fun ChangePasswordDialog(
 private fun DeleteAccountDialog(
     isLoading: Boolean,
     error: String?,
+    isGoogleUser: Boolean = false,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -830,13 +835,15 @@ private fun DeleteAccountDialog(
                     ),
                     color = OnSurfaceVariant
                 )
-                PwField(
-                    value         = password,
-                    onValueChange = { password = it },
-                    label         = "Şifrenizi Girin",
-                    showPassword  = showPw,
-                    onToggle      = { showPw = !showPw }
-                )
+                if (!isGoogleUser) {
+                    PwField(
+                        value         = password,
+                        onValueChange = { password = it },
+                        label         = "Şifrenizi Girin",
+                        showPassword  = showPw,
+                        onToggle      = { showPw = !showPw }
+                    )
+                }
                 if (error != null) {
                     Text(
                         error,
@@ -849,7 +856,7 @@ private fun DeleteAccountDialog(
         confirmButton = {
             TextButton(
                 onClick  = { onConfirm(password) },
-                enabled  = !isLoading && password.isNotBlank()
+                enabled  = !isLoading && (isGoogleUser || password.isNotBlank())
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(16.dp),
@@ -947,10 +954,9 @@ private fun ScrollableNumberPicker(
     // Scroll bittiğinde değeri güncelle
     LaunchedEffect(listState.isScrollInProgress) {
         if (!listState.isScrollInProgress) {
+            val itemHeightPx = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 1
             val centerIndex = listState.firstVisibleItemIndex +
-                (listState.firstVisibleItemScrollOffset.toFloat() /
-                    (itemHeight.value * listState.layoutInfo.viewportSize.height /
-                        listState.layoutInfo.viewportSize.height)).toInt()
+                ((listState.firstVisibleItemScrollOffset.toFloat() / itemHeightPx) + 0.5f).toInt()
             val snappedIndex = centerIndex.coerceIn(0, items.lastIndex)
             onValueChange(items[snappedIndex])
         }

@@ -58,8 +58,11 @@ class UserRepository(
     suspend fun isProfileComplete(uid: String): Boolean {
         return try {
             val doc = usersCollection.document(uid).get().await()
-            doc.getBoolean("isProfileComplete") ?: false
+            val result = doc.getBoolean("isProfileComplete") ?: false
+            android.util.Log.d("UserRepo", "isProfileComplete uid=$uid exists=${doc.exists()} result=$result")
+            result
         } catch (e: Exception) {
+            android.util.Log.e("UserRepo", "isProfileComplete HATA: ${e.message}", e)
             false
         }
     }

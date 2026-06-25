@@ -774,7 +774,7 @@ private fun LogSessionCard(
                     )
                 } else {
                     Text(
-                        text = if (saveSuccess) "✓  KAYDEDİLDİ" else "ANTRENMANı BİTİR",
+                        text = if (saveSuccess) "✓  KAYDEDİLDİ" else "ANTRENMANI BİTİR",
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontFamily = LexendFamily,
                             fontWeight = FontWeight.Black,

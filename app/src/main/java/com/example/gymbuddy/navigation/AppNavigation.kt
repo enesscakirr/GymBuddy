@@ -34,12 +34,14 @@ object Routes {
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    onGoogleSignIn: () -> Unit = {}
 ) {
     val authState by authViewModel.authState.collectAsState()
     val loginState by authViewModel.loginState.collectAsState()
     val registerState by authViewModel.registerState.collectAsState()
     val profileSetupState by authViewModel.profileSetupState.collectAsState()
+    val resetPasswordMessage by authViewModel.resetPasswordState.collectAsState()
 
     // ── Reactive navigation based on auth state ─────────────────
     LaunchedEffect(authState.isLoading, authState.isLoggedIn, authState.isProfileComplete) {
@@ -146,19 +148,18 @@ fun AppNavigation(
                 onLoginClick = { email, password ->
                     authViewModel.loginWithEmail(email, password)
                 },
-                onGoogleSignInClick = {
-                    // Google Sign-In, Activity'den tetiklenmeli
-                    // Şimdilik placeholder — credential manager entegrasyonu aşağıda
-                },
-                onForgotPasswordClick = {
-                    // TODO: Forgot Password ekranı
+                onGoogleSignInClick = onGoogleSignIn,
+                onForgotPasswordClick = { email ->
+                    authViewModel.sendPasswordReset(email)
                 },
                 onSignUpClick = {
                     navController.navigate(Routes.REGISTER)
                 },
                 isLoading = loginState.isLoading,
                 errorMessage = loginState.error,
-                onErrorDismiss = { authViewModel.clearLoginError() }
+                onErrorDismiss = { authViewModel.clearLoginError() },
+                resetPasswordMessage = resetPasswordMessage,
+                onResetPasswordDismiss = { authViewModel.clearResetPasswordState() }
             )
         }
 

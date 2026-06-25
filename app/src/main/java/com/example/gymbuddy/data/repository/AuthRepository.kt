@@ -122,6 +122,24 @@ class AuthRepository(
         }
     }
 
+    // ── Auth Provider Check ────────────────────────────────────────
+    val isGoogleUser: Boolean
+        get() = auth.currentUser?.providerData?.any { it.providerId == "google.com" } == true
+
+    val isPasswordUser: Boolean
+        get() = auth.currentUser?.providerData?.any { it.providerId == "password" } == true
+
+    // ── Delete Account (Google users — no password needed) ─────────
+    suspend fun deleteAccountGoogle(): Result<Unit> {
+        val user = auth.currentUser ?: return Result.failure(Exception("Oturum bulunamadı"))
+        return try {
+            user.delete().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // ── Logout ──────────────────────────────────────────────────────
     fun logout() {
         auth.signOut()

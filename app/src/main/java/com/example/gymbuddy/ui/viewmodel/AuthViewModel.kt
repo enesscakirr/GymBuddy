@@ -343,6 +343,34 @@ class AuthViewModel(
         _goalsState.value = GoalsUiState()
     }
 
+    // ── Forgot Password ────────────────────────────────────────────
+    private val _resetPasswordState = MutableStateFlow<String?>(null)
+    val resetPasswordState: StateFlow<String?> = _resetPasswordState.asStateFlow()
+
+    fun sendPasswordReset(email: String) {
+        if (email.isBlank()) {
+            _resetPasswordState.value = "E-posta adresi boş bırakılamaz"
+            return
+        }
+        viewModelScope.launch {
+            authRepository.sendPasswordReset(email)
+                .onSuccess {
+                    _resetPasswordState.value = "Şifre sıfırlama bağlantısı gönderildi"
+                }
+                .onFailure { e ->
+                    _resetPasswordState.value = when {
+                        e.message?.contains("INVALID_EMAIL") == true -> "Geçersiz e-posta adresi"
+                        e.message?.contains("USER_NOT_FOUND") == true -> "Bu e-posta ile kayıtlı hesap bulunamadı"
+                        else -> "Bir hata oluştu: ${e.localizedMessage}"
+                    }
+                }
+        }
+    }
+
+    fun clearResetPasswordState() {
+        _resetPasswordState.value = null
+    }
+
     // ── Logout ──────────────────────────────────────────────────────
     fun logout() {
         authRepository.logout()

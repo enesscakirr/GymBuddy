@@ -178,19 +178,28 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun clearPasswordState() { _passwordState.value = PasswordChangeState() }
 
+    // ── Auth Provider ────────────────────────────────────────────────
+    val isGoogleUser: Boolean get() = authRepository.isGoogleUser
+    val isPasswordUser: Boolean get() = authRepository.isPasswordUser
+
     // ── Hesabı Sil ───────────────────────────────────────────────────
 
     fun deleteAccount(currentPassword: String, uid: String) {
-        if (currentPassword.isBlank()) {
+        if (!isGoogleUser && currentPassword.isBlank()) {
             _deleteState.value = DeleteAccountState(error = "Şifre boş bırakılamaz")
             return
         }
         viewModelScope.launch {
             _deleteState.value = DeleteAccountState(isLoading = true)
-            // Önce Firestore verisini sil, sonra Auth'u
-            userRepository.deleteUser(uid)
-            authRepository.deleteAccount(currentPassword)
+            // Önce Auth'u doğrula ve sil, sonra Firestore verisini sil
+            val authResult = if (isGoogleUser) {
+                authRepository.deleteAccountGoogle()
+            } else {
+                authRepository.deleteAccount(currentPassword)
+            }
+            authResult
                 .onSuccess {
+                    userRepository.deleteUser(uid)
                     _deleteState.value = DeleteAccountState(isSuccess = true)
                 }
                 .onFailure { e ->
